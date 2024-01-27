@@ -1,4 +1,5 @@
 
+import util.AntiAliasing;
 import util.Coordinates;
 import util.Translate;
 
@@ -56,7 +57,7 @@ public class ImageDisplay {
 					if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
 							|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
 						int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
-						antialiasing(translated, pix, img);
+						AntiAliasing.antialiasingForRotation(translated, pix, img, width, height);
 					}
 					ind++;
 				}
@@ -103,18 +104,6 @@ public class ImageDisplay {
 	}
 
 
-	private void antialiasing(Coordinates coordinates, int pix, BufferedImage img){
-		int xCiel = (int) Math.ceil(coordinates.getxCoordinate());
-		int yCiel = (int) Math.ceil(coordinates.getyCoordinate());
-		if(xCiel < width && yCiel < height){
-			img.setRGB(xCiel, yCiel, pix);
-		}
-		int xFloor = (int) Math.floor(coordinates.getxCoordinate());
-		int yFloor = (int) Math.floor(coordinates.getyCoordinate());
-		if(xFloor >= 0 && yFloor >= 0){
-			img.setRGB(xFloor, yFloor, pix);
-		}
-	}
 	public static void main(String[] args) {
 		ImageDisplay ren = new ImageDisplay();
 		ren.showIms(args);
