@@ -27,6 +27,7 @@ public class ImageDisplay {
 	{
 		int inputAngle = 45;
 		int angle = 180 + inputAngle;
+		double scale = 1;
 		try
 		{
 			int frameLength = width*height*3;
@@ -43,15 +44,12 @@ public class ImageDisplay {
 			{
 				for(int x = 0; x < width; x++)
 				{
-					byte a = 0;
 					byte r = bytes[ind];
 					byte g = bytes[ind+height*width];
 					byte b = bytes[ind+height*width*2]; 
 
-					//int pix = ((a << 24) + (r << 16) + (g << 8) + b);
-
 					Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
-					double[][] rotated = util.MatrixUtil.rotation(angle, translated.getxCoordinate(), translated.getyCoordinate());
+					double[][] rotated = util.MatrixUtil.rotation(angle, translated.getxCoordinate(), translated.getyCoordinate(), scale);
 					translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
 
 					if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
@@ -89,12 +87,8 @@ public class ImageDisplay {
 		lbIm1 = new JLabel(new ImageIcon(imgOne));
 
 		GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.HORIZONTAL;
 		c.anchor = GridBagConstraints.CENTER;
 		c.weightx = 0.5;
-		c.gridx = 0;
-		c.gridy = 0;
-
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.gridx = 0;
 		c.gridy = 1;
