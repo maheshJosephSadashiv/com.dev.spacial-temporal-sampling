@@ -6,6 +6,11 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
+import java.util.concurrent.TimeUnit;
 
 
 public class ImageDisplay {
@@ -99,15 +104,18 @@ public class ImageDisplay {
 		frame.pack();
 		frame.setVisible(true);
 
+
 		while (true) {
 			// Display current image
-			inputAngle = 0;
-			scale = 5;
+			Instant starts = Instant.now();
+			inputAngle += 1;
+			scale *= 1.01;
 			animate();
+			Instant ends = Instant.now();
+			System.out.println(TimeUnit.NANOSECONDS.toMillis(Duration.between(starts, ends).getNano()));
 			lbIm1.setIcon(new ImageIcon(imgOne));
-			System.out.println(inputAngle);
 			try {
-				Thread.sleep(300);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
