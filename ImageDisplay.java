@@ -1,13 +1,11 @@
-
-import util.AntiAliasing;
 import util.Coordinates;
 import util.Translate;
 
-import java.awt.*;
-import java.awt.image.*;
-import java.io.*;
-import java.nio.Buffer;
 import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.RandomAccessFile;
 
 
 public class ImageDisplay {
@@ -15,9 +13,6 @@ public class ImageDisplay {
 	JFrame frame;
 	JLabel lbIm1;
 	BufferedImage imgOne;
-
-	// Modify the height and width values here to read and display an image with
-  	// different dimensions. 
 	int width = 512;
 	int height = 512;
 	private long inputAngle = 0;
@@ -66,7 +61,7 @@ public class ImageDisplay {
 			for(int x = 0; x < width; x++)
 			{
 				Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
-				double[][] rotated = util.MatrixUtil.rotationAndScale(inputAngle, translated.getxCoordinate(), translated.getyCoordinate(), scale);
+				double[][] rotated = util.MatrixUtil.rotationAndScale(inputAngle + 180, translated.getxCoordinate(), translated.getyCoordinate(), scale);
 				translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
 				if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
 						|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
@@ -106,8 +101,8 @@ public class ImageDisplay {
 
 		while (true) {
 			// Display current image
-			inputAngle += 45;
-			scale *= 0.95;
+			inputAngle = 0;
+			scale = 5;
 			animate();
 			lbIm1.setIcon(new ImageIcon(imgOne));
 			System.out.println(inputAngle);
