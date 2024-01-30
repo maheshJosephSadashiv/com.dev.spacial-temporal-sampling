@@ -6,6 +6,7 @@ import util.Translate;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
+import java.nio.Buffer;
 import javax.swing.*;
 
 
@@ -19,15 +20,13 @@ public class ImageDisplay {
   	// different dimensions. 
 	int width = 512;
 	int height = 512;
-
+	int[][] originalPixelMatrix = new int[height][width];
 	/** Read Image RGB
 	 *  Reads the image of given width and height at the given imgPath into the provided BufferedImage.
 	 */
-	private void readImageRGB(int width, int height, String imgPath, BufferedImage img)
+	private void readImageRGB(int width, int height, String imgPath)
 	{
-		int inputAngle = 45;
-		int angle = 180 + inputAngle;
-		double scale = 1;
+
 		try
 		{
 			int frameLength = width*height*3;
@@ -46,38 +45,47 @@ public class ImageDisplay {
 				{
 					byte r = bytes[ind];
 					byte g = bytes[ind+height*width];
-					byte b = bytes[ind+height*width*2]; 
-
-					Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
-					double[][] rotated = util.MatrixUtil.rotation(angle, translated.getxCoordinate(), translated.getyCoordinate(), scale);
-					translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
-
-					if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
-							|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
-						int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
-						AntiAliasing.antialiasingForRotation(translated, pix, img, width, height);
-					}
+					byte b = bytes[ind+height*width*2];
+					int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+					originalPixelMatrix[x][y] = pix;
 					ind++;
 				}
 			}
+			animate();
 		}
-		catch (FileNotFoundException e)
-		{
+		catch (Exception e){
 			e.printStackTrace();
 		}
-		catch (IOException e)
+	}
+
+	private void animate() throws Exception {
+		imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		int inputAngle = 45;
+		int angle = 180 + inputAngle;
+		double scale = 5;
+		for(int y = 0; y < height; y++)
 		{
-			e.printStackTrace();
-		}catch (Exception e){
-			e.printStackTrace();
+			for(int x = 0; x < width; x++)
+			{
+				Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
+				double[][] rotated = util.MatrixUtil.rotationAndScale(angle, translated.getxCoordinate(), translated.getyCoordinate(), scale);
+				translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
+				if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
+						|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
+					int pix = originalPixelMatrix[(int) translated.getxCoordinate()][(int) translated.getyCoordinate()];
+					imgOne.setRGB(x, y, pix);
+				} else{
+					imgOne.setRGB(x, y, Integer.MAX_VALUE);
+				}
+			}
 		}
 	}
 
 	public void showIms(String[] args){
 
 		// Read in the specified image
-		imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		readImageRGB(width, height, "Lena_512_512.rgb", imgOne);
+
+		readImageRGB(width, height, "Lena_512_512.rgb");
 
 		// Use label to display the image
 		frame = new JFrame();
@@ -96,7 +104,24 @@ public class ImageDisplay {
 		frame.pack();
 		frame.setVisible(true);
 	}
-
+//	public void run() {
+//		frame.setVisible(true);
+//
+//		while (true) {
+//			// Display current image
+//			imageLabel.setIcon(new ImageIcon(images[currentImageIndex]));
+//
+//			// Update current image index
+//			currentImageIndex = (currentImageIndex + 1) % images.length;
+//
+//			// Delay to control frame rate
+//			try {
+//				Thread.sleep(1000); // Example: 1 second delay
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//		}
+//	}
 
 	public static void main(String[] args) {
 		ImageDisplay ren = new ImageDisplay();
