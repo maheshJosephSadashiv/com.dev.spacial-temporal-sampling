@@ -8,24 +8,27 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 public class ImageDisplay {
 
 	JFrame frame;
 	JLabel lbIm1;
-	BufferedImage imgOne;
+//	BufferedImage imgOne;
 	int width = 512;
 	int height = 512;
 	private long inputAngle = 0;
 	private double scale = 1;
 	int[][] originalPixelMatrix = new int[height][width];
-	/** Read Image RGB
-	 *  Reads the image of given width and height at the given imgPath into the provided BufferedImage.
-	 */
+
+	class DoubleBuffering implements Callable<BufferedImage>{
+
+		@Override
+		public BufferedImage call() throws Exception {
+			return animate();
+		}
+	}
 	private void readImageRGB(int width, int height, String imgPath)
 	{
 
@@ -59,8 +62,9 @@ public class ImageDisplay {
 		}
 	}
 
-	private void animate() throws Exception {
-		imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+	private BufferedImage animate() throws Exception {
+		BufferedImage imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		System.out.println(inputAngle +" "+ scale);
 		for(int y = 0; y < height; y++)
 		{
 			for(int x = 0; x < width; x++)
@@ -77,6 +81,7 @@ public class ImageDisplay {
 				}
 			}
 		}
+		return imgOne;
 	}
 
 	public void showIms(String[] args) throws Exception {
@@ -103,22 +108,34 @@ public class ImageDisplay {
 		frame.setPreferredSize(new Dimension(width, height));
 		frame.pack();
 		frame.setVisible(true);
-
+		boolean isDouble = false;
 
 		while (true) {
+			if(!isDouble){
+
+			}
 			// Display current image
 			Instant starts = Instant.now();
-			inputAngle += 1;
+			inputAngle += 45;
 			scale *= 1.01;
-			animate();
+			// Creating a thread using the MyCallable instance
+			ExecutorService executor = Executors.newFixedThreadPool(2);
+			Future<BufferedImage> future = executor.submit(new DoubleBuffering());
+			BufferedImage imgOne = future.get();
+			inputAngle += 45;
+			scale *= 1.01;
+			Future<BufferedImage> future2 = executor.submit(new DoubleBuffering());
+			executor.shutdown();
 			Instant ends = Instant.now();
 			System.out.println(TimeUnit.NANOSECONDS.toMillis(Duration.between(starts, ends).getNano()));
 			lbIm1.setIcon(new ImageIcon(imgOne));
 			try {
-				Thread.sleep(100);
+				Thread.sleep(400);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			BufferedImage imgOne2 = future2.get();
+			lbIm1.setIcon(new ImageIcon(imgOne2));
 		}
 	}
 
