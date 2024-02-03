@@ -4,10 +4,10 @@ import util.Translate;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.*;
 
 
@@ -15,11 +15,12 @@ public class ImageDisplay {
 
 	JFrame frame;
 	JLabel lbIm1;
-//	BufferedImage imgOne;
 	int width = 512;
 	int height = 512;
-	private long inputAngle = 0;
-	private double scale = 1;
+	private static final int SCREEN_WIDTH = 600;
+	private static final int SCREEN_HEIGHT = 600;
+	private long INITIAL_ANGLE = 0;
+	private double INITIAL_SCALE = 1;
 	int[][] originalPixelMatrix = new int[height][width];
 
 	class DoubleBuffering implements Callable<BufferedImage>{
@@ -64,13 +65,12 @@ public class ImageDisplay {
 
 	private BufferedImage animate() throws Exception {
 		BufferedImage imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		System.out.println(inputAngle +" "+ scale);
 		for(int y = 0; y < height; y++)
 		{
 			for(int x = 0; x < width; x++)
 			{
 				Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
-				double[][] rotated = util.MatrixUtil.rotationAndScale(inputAngle + 180, translated.getxCoordinate(), translated.getyCoordinate(), scale);
+				double[][] rotated = util.MatrixUtil.rotationAndScale(INITIAL_ANGLE + 180, translated.getxCoordinate(), translated.getyCoordinate(), INITIAL_SCALE);
 				translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
 				if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
 						|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
@@ -85,11 +85,7 @@ public class ImageDisplay {
 	}
 
 	public void showIms(String[] args) throws Exception {
-
-		// Read in the specified image
 		readImageRGB(width, height, "Lena_512_512.rgb");
-
-		// Use label to display the image
 		frame = new JFrame();
 		GridBagLayout gLayout = new GridBagLayout();
 		frame.getContentPane().setLayout(gLayout);
@@ -104,39 +100,64 @@ public class ImageDisplay {
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.gridx = 0;
 		c.gridy = 1;
+		lbIm1.setHorizontalAlignment(JLabel.CENTER);
 		frame.getContentPane().add(lbIm1, c);
-		frame.setPreferredSize(new Dimension(width, height));
+		frame.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
 		frame.pack();
 		frame.setVisible(true);
+
+		ExecutorService executor = Executors.newFixedThreadPool(2);
 		boolean isDouble = false;
+		boolean gameLoop = true;
+		Future<BufferedImage> future1 = null;
+		Future<BufferedImage> future2 = null;
+		BufferedImage imgOne = null;
+		ExecutorService renderExecutor = Executors.newSingleThreadExecutor();
 
-		while (true) {
-			if(!isDouble){
+		while (gameLoop) {
+				INITIAL_ANGLE += 4;
+				INITIAL_SCALE *= 0.999;
+				if (!isDouble) {
+					if (future1 == null) {
+						future1 = executor.submit(new DoubleBuffering());
+					}
+					imgOne = future1.get();
+					future2 = executor.submit(new DoubleBuffering());
+				} else {
+					imgOne = future2.get();
+					future1 = executor.submit(new DoubleBuffering());
+				}
+				BufferedImage finalImgOne = imgOne;
+			    CountDownLatch latch = new CountDownLatch(1);
+				renderExecutor.execute(()->{
 
-			}
-			// Display current image
-			Instant starts = Instant.now();
-			inputAngle += 45;
-			scale *= 1.01;
-			// Creating a thread using the MyCallable instance
-			ExecutorService executor = Executors.newFixedThreadPool(2);
-			Future<BufferedImage> future = executor.submit(new DoubleBuffering());
-			BufferedImage imgOne = future.get();
-			inputAngle += 45;
-			scale *= 1.01;
-			Future<BufferedImage> future2 = executor.submit(new DoubleBuffering());
-			executor.shutdown();
-			Instant ends = Instant.now();
-			System.out.println(TimeUnit.NANOSECONDS.toMillis(Duration.between(starts, ends).getNano()));
-			lbIm1.setIcon(new ImageIcon(imgOne));
-			try {
-				Thread.sleep(400);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			BufferedImage imgOne2 = future2.get();
-			lbIm1.setIcon(new ImageIcon(imgOne2));
+					lbIm1.setIcon(new ImageIcon(finalImgOne));
+
+					lbIm1.addPropertyChangeListener("icon", new PropertyChangeListener() {
+						@Override
+						public void propertyChange(PropertyChangeEvent evt) {
+							System.out.println(
+									"Current Thread Name 1: "
+											+ Thread.currentThread().getName());
+							if ("icon".equals(evt.getPropertyName())) {
+								latch.countDown();
+							}
+						}
+					});
+				});
+			System.out.println(
+					"Current Thread Name 2: "
+							+ Thread.currentThread().getName());
+
+				//latch.await();
+				try {
+					Thread.sleep(15);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				isDouble = !isDouble;
 		}
+		executor.shutdown();
 	}
 
 	public static void main(String[] args) {
