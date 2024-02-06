@@ -4,11 +4,12 @@ import util.Translate;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 public class ImageDisplay {
@@ -21,6 +22,9 @@ public class ImageDisplay {
 	private static final int SCREEN_HEIGHT = 600;
 	private long INITIAL_ANGLE = 0;
 	private double INITIAL_SCALE = 1;
+	private int inputAngle;
+	private double inputScale;
+	private int inputFrameRate;
 	int[][] originalPixelMatrix = new int[height][width];
 
 	class DoubleBuffering implements Callable<BufferedImage>{
@@ -85,8 +89,16 @@ public class ImageDisplay {
 	}
 
 	public void showIms(String[] args) throws Exception {
-		readImageRGB(width, height, "Lena_512_512.rgb");
+		if(args.length != 4){
+			throw new Exception("Invalid number of arguments");
+		}
+		String image = args[0];
+		inputScale = Double.parseDouble(args[1]);
+		inputAngle = Integer.parseInt(args[2]);
+		inputFrameRate = Integer.parseInt(args[3]);
+		readImageRGB(width, height, image);
 		frame = new JFrame();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gLayout = new GridBagLayout();
 		frame.getContentPane().setLayout(gLayout);
 		run();
@@ -114,8 +126,8 @@ public class ImageDisplay {
 		BufferedImage imgOne = null;
 
 		while (gameLoop) {
-				INITIAL_ANGLE += 4;
-				INITIAL_SCALE *= 0.999;
+				INITIAL_ANGLE += inputAngle;
+				INITIAL_SCALE *= inputScale;
 				if (!isDouble) {
 					if (future1 == null) {
 						future1 = executor.submit(new DoubleBuffering());
@@ -128,7 +140,7 @@ public class ImageDisplay {
 				}
 				lbIm1.setIcon(new ImageIcon(imgOne));
 				try {
-					Thread.sleep(15);
+					Thread.sleep(1000/inputFrameRate);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
