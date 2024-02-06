@@ -112,7 +112,6 @@ public class ImageDisplay {
 		Future<BufferedImage> future1 = null;
 		Future<BufferedImage> future2 = null;
 		BufferedImage imgOne = null;
-		ExecutorService renderExecutor = Executors.newSingleThreadExecutor();
 
 		while (gameLoop) {
 				INITIAL_ANGLE += 4;
@@ -127,29 +126,7 @@ public class ImageDisplay {
 					imgOne = future2.get();
 					future1 = executor.submit(new DoubleBuffering());
 				}
-				BufferedImage finalImgOne = imgOne;
-			    CountDownLatch latch = new CountDownLatch(1);
-				renderExecutor.execute(()->{
-
-					lbIm1.setIcon(new ImageIcon(finalImgOne));
-
-					lbIm1.addPropertyChangeListener("icon", new PropertyChangeListener() {
-						@Override
-						public void propertyChange(PropertyChangeEvent evt) {
-							System.out.println(
-									"Current Thread Name 1: "
-											+ Thread.currentThread().getName());
-							if ("icon".equals(evt.getPropertyName())) {
-								latch.countDown();
-							}
-						}
-					});
-				});
-			System.out.println(
-					"Current Thread Name 2: "
-							+ Thread.currentThread().getName());
-
-				//latch.await();
+				lbIm1.setIcon(new ImageIcon(imgOne));
 				try {
 					Thread.sleep(15);
 				} catch (InterruptedException e) {
