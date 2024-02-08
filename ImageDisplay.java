@@ -4,6 +4,8 @@ import util.Translate;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -26,6 +28,12 @@ public class ImageDisplay {
 	private int inputAngle;
 	private double inputScale;
 	private int inputFrameRate;
+	private Timer timer;
+	boolean gameLoop = true;
+	ExecutorService executor;
+	Future<BufferedImage> future1 = null;
+	Future<BufferedImage> future2 = null;
+	boolean isDouble = false;
 	int[][] originalPixelMatrix = new int[height][width];
 
 	class DoubleBuffering implements Callable<BufferedImage>{
@@ -103,10 +111,6 @@ public class ImageDisplay {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gLayout = new GridBagLayout();
 		frame.getContentPane().setLayout(gLayout);
-		run();
-	}
-	public void run() throws Exception {
-
 		lbIm1 = new JLabel();
 		GridBagConstraints c = new GridBagConstraints();
 		c.anchor = GridBagConstraints.CENTER;
@@ -119,36 +123,38 @@ public class ImageDisplay {
 		frame.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
 		frame.pack();
 		frame.setVisible(true);
-
-		ExecutorService executor = Executors.newFixedThreadPool(2);
-		boolean isDouble = false;
-		boolean gameLoop = true;
-		Future<BufferedImage> future1 = null;
-		Future<BufferedImage> future2 = null;
+		executor = Executors.newFixedThreadPool(2);
+		timer = new Timer(1000 / inputFrameRate, e -> {
+            try {
+                run();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+		timer.start();
+		//executor.shutdown();
+	}
+	public void run() throws Exception {
 		BufferedImage imgOne = null;
-
-		while (gameLoop) {
-				INITIAL_ANGLE += inputAngle;
-				INITIAL_SCALE *= inputScale;
-				if (!isDouble) {
-					if (future1 == null) {
-						future1 = executor.submit(new DoubleBuffering());
-					}
-					imgOne = future1.get();
-					future2 = executor.submit(new DoubleBuffering());
-				} else {
-					imgOne = future2.get();
-					future1 = executor.submit(new DoubleBuffering());
-				}
-				lbIm1.setIcon(new ImageIcon(imgOne));
-				try {
-					Thread.sleep(1000/inputFrameRate);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				isDouble = !isDouble;
+		INITIAL_ANGLE += inputAngle;
+		INITIAL_SCALE *= inputScale;
+		if (!isDouble) {
+			if (future1 == null) {
+				future1 = executor.submit(new DoubleBuffering());
+			}
+			imgOne = future1.get();
+			future2 = executor.submit(new DoubleBuffering());
+		} else {
+			imgOne = future2.get();
+			future1 = executor.submit(new DoubleBuffering());
 		}
-		executor.shutdown();
+		lbIm1.setIcon(new ImageIcon(imgOne));
+		try {
+			Thread.sleep(1000/inputFrameRate);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		isDouble = !isDouble;
 	}
 
 	public static void main(String[] args) {
