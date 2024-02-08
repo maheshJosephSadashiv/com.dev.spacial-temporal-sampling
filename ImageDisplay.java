@@ -1,3 +1,4 @@
+import util.AntiAliasing;
 import util.Coordinates;
 import util.Translate;
 
@@ -56,8 +57,7 @@ public class ImageDisplay {
 					byte r = bytes[ind];
 					byte g = bytes[ind+height*width];
 					byte b = bytes[ind+height*width*2];
-					int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
-					originalPixelMatrix[x][y] = pix;
+					originalPixelMatrix[x][y] = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
 					ind++;
 				}
 			}
@@ -78,7 +78,9 @@ public class ImageDisplay {
 				translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
 				if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
 						|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
-					int pix = originalPixelMatrix[(int) translated.getxCoordinate()][(int) translated.getyCoordinate()];
+					int pix = 0;
+					if(INITIAL_SCALE < 1) pix = AntiAliasing.averagingFilter(translated, originalPixelMatrix);
+					else pix = originalPixelMatrix[(int) translated.getxCoordinate()][(int) translated.getyCoordinate()];
 					imgOne.setRGB(x, y, pix);
 				} else{
 					imgOne.setRGB(x, y, Integer.MAX_VALUE);
