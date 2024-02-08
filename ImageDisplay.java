@@ -4,15 +4,12 @@ import util.Translate;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.*;
 
 
 public class ImageDisplay {
@@ -33,14 +30,20 @@ public class ImageDisplay {
 	ExecutorService executor;
 	Future<BufferedImage> future1 = null;
 	Future<BufferedImage> future2 = null;
-	boolean isDouble = false;
+	Future<BufferedImage> future3 = null;
+	int multiBuffer = 0;
 	int[][] originalPixelMatrix = new int[height][width];
 
-	class DoubleBuffering implements Callable<BufferedImage>{
-
+	class TripleBuffering implements Callable<BufferedImage>{
+		long angle;
+		double scale;
+		public TripleBuffering(long angle, double scale){
+			this.scale = scale;
+			this.angle = angle;
+		}
 		@Override
 		public BufferedImage call() throws Exception {
-			return animate();
+			return animate(this.angle, this.scale);
 		}
 	}
 	private void readImageRGB(int width, int height, String imgPath)
@@ -50,13 +53,10 @@ public class ImageDisplay {
 		{
 			int frameLength = width*height*3;
 			File file = new File(imgPath);
-			RandomAccessFile raf = new RandomAccessFile(file, "r");
-			raf.seek(0);
-
-			long len = frameLength;
-			byte[] bytes = new byte[(int) len];
-
-			raf.read(bytes);
+			RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
+			randomAccessFile.seek(0);
+			byte[] bytes = new byte[frameLength];
+			randomAccessFile.read(bytes);
 			int ind = 0;
 			for(int y = 0; y < height; y++)
 			{
@@ -75,14 +75,14 @@ public class ImageDisplay {
 		}
 	}
 
-	private BufferedImage animate() throws Exception {
+	private BufferedImage animate(long angle, double scale) throws Exception {
 		BufferedImage imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		for(int y = 0; y < height; y++)
 		{
 			for(int x = 0; x < width; x++)
 			{
 				Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
-				double[][] rotated = util.MatrixUtil.rotationAndScale(INITIAL_ANGLE + 180, translated.getxCoordinate(), translated.getyCoordinate(), INITIAL_SCALE);
+				double[][] rotated = util.MatrixUtil.rotationAndScale(angle + 180, translated.getxCoordinate(), translated.getyCoordinate(), scale);
 				translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
 				if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
 						|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
@@ -98,7 +98,7 @@ public class ImageDisplay {
 		return imgOne;
 	}
 
-	public void showIms(String[] args) throws Exception {
+	public void createFrame(String[] args) throws Exception {
 		if(args.length != 4){
 			throw new Exception("Invalid number of arguments");
 		}
@@ -123,8 +123,8 @@ public class ImageDisplay {
 		frame.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
 		frame.pack();
 		frame.setVisible(true);
-		executor = Executors.newFixedThreadPool(2);
-		timer = new Timer(1000 / inputFrameRate, e -> {
+		executor = Executors.newFixedThreadPool(3);
+		timer = new Timer(1000/inputFrameRate, e -> {
             try {
                 run();
             } catch (Exception ex) {
@@ -132,35 +132,72 @@ public class ImageDisplay {
             }
         });
 		timer.start();
-		//executor.shutdown();
 	}
-	public void run() throws Exception {
-		BufferedImage imgOne = null;
+
+	private void increment(){
 		INITIAL_ANGLE += inputAngle;
 		INITIAL_SCALE *= inputScale;
-		if (!isDouble) {
-			if (future1 == null) {
-				future1 = executor.submit(new DoubleBuffering());
-			}
-			imgOne = future1.get();
-			future2 = executor.submit(new DoubleBuffering());
-		} else {
-			imgOne = future2.get();
-			future1 = executor.submit(new DoubleBuffering());
+	}
+
+	/**
+	 * @implNote The run method contains the game loop logic, to achive the desired max frame rate of 30 FPS
+	 * I have created 3 threads to
+	 */
+	public void run() throws Exception {
+		BufferedImage imgOne = null;
+		Instant start = Instant.now();
+		switch(multiBuffer){
+			case 0:
+				if (future1 == null) {
+					increment();
+					future1 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				imgOne = future1.get();
+				future1 = null;
+				if(future2 == null) {
+					increment();
+					future2 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				if (future3 == null){
+					increment();
+					future3 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				break;
+			case 1:
+				imgOne = future2.get();
+				future2 = null;
+				if (future3 == null){
+					increment();
+					future3 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				if(future1 == null) {
+					increment();
+					future1 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				break;
+			case 2:
+				imgOne = future3.get();
+				future3 = null;
+				if(future1 == null) {
+					increment();
+					future1 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				if(future2 == null) {
+					increment();
+					future2 = executor.submit(new TripleBuffering(INITIAL_ANGLE, INITIAL_SCALE));
+				}
+				break;
 		}
 		lbIm1.setIcon(new ImageIcon(imgOne));
-		try {
-			Thread.sleep(1000/inputFrameRate);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		isDouble = !isDouble;
+		Instant end = Instant.now();
+		System.out.println(TimeUnit.NANOSECONDS.toMillis(Duration.between(start, end).getNano()));
+		multiBuffer = (multiBuffer + 1)%3;
 	}
 
 	public static void main(String[] args) {
-		ImageDisplay ren = new ImageDisplay();
+		ImageDisplay imageDisplay = new ImageDisplay();
 		try {
-			ren.showIms(args);
+			imageDisplay.createFrame(args);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
