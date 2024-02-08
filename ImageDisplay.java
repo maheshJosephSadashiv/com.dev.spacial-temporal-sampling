@@ -160,6 +160,4 @@ public class ImageDisplay {
 		}
 	}
 
-	//TODO : antialiasing while zooming out, check with input as checker board pattern!!
-
 }
