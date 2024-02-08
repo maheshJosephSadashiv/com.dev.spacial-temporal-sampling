@@ -5,12 +5,11 @@ import util.Translate;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 
 public class ImageDisplay {
@@ -128,25 +127,39 @@ public class ImageDisplay {
 		BufferedImage imgOne = null;
 
 		while (gameLoop) {
-				INITIAL_ANGLE += inputAngle;
-				INITIAL_SCALE *= inputScale;
-				if (!isDouble) {
-					if (future1 == null) {
-						future1 = executor.submit(new DoubleBuffering());
-					}
-					imgOne = future1.get();
-					future2 = executor.submit(new DoubleBuffering());
-				} else {
-					imgOne = future2.get();
+
+			CountDownLatch latch = new CountDownLatch(1);
+			INITIAL_ANGLE += inputAngle;
+			INITIAL_SCALE *= inputScale;
+			if (!isDouble) {
+				if (future1 == null) {
 					future1 = executor.submit(new DoubleBuffering());
 				}
-				lbIm1.setIcon(new ImageIcon(imgOne));
-				try {
-					Thread.sleep(1000/inputFrameRate);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				imgOne = future1.get();
+				future2 = executor.submit(new DoubleBuffering());
+			} else {
+				imgOne = future2.get();
+				future1 = executor.submit(new DoubleBuffering());
+			}
+
+			lbIm1.addPropertyChangeListener("icon", new PropertyChangeListener() {
+				@Override
+				public void propertyChange(PropertyChangeEvent evt) {
+					if ("icon".equals(evt.getPropertyName())) {
+						latch.countDown();
+					}
 				}
-				isDouble = !isDouble;
+			});
+
+			BufferedImage finalImgOne = imgOne;
+			Timer timer = new Timer(1000/inputFrameRate, e -> {
+				lbIm1.setIcon(new ImageIcon(finalImgOne));
+			});
+			timer.setRepeats(false);
+			timer.start();
+			latch.await();
+
+			isDouble = !isDouble;
 		}
 		executor.shutdown();
 	}
