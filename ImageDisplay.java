@@ -7,9 +7,10 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 public class ImageDisplay {
@@ -140,12 +141,11 @@ public class ImageDisplay {
 	}
 
 	/**
-	 * @implNote The run method contains the game loop logic, to achive the desired max frame rate of 30 FPS
-	 * I have created 3 threads to
+	 * @implNote The run method contains the game loop logic, to achieve the desired max frame rate of 30 FPS
+	 * I have created 3 threads to precalculate the transformations.
 	 */
 	public void run() throws Exception {
 		BufferedImage imgOne = null;
-		Instant start = Instant.now();
 		switch(multiBuffer){
 			case 0:
 				if (future1 == null) {
@@ -189,8 +189,6 @@ public class ImageDisplay {
 				break;
 		}
 		lbIm1.setIcon(new ImageIcon(imgOne));
-		Instant end = Instant.now();
-		System.out.println(TimeUnit.NANOSECONDS.toMillis(Duration.between(start, end).getNano()));
 		multiBuffer = (multiBuffer + 1)%3;
 	}
 
