@@ -21,9 +21,9 @@ public class ImageDisplay {
 	int height = 512;
 	private static final int SCREEN_WIDTH = 600;
 	private static final int SCREEN_HEIGHT = 600;
-	private long INITIAL_ANGLE = 0;
+	private double INITIAL_ANGLE = 0;
 	private double INITIAL_SCALE = 1;
-	private int inputAngle;
+	private Double inputAngle;
 	private double inputScale;
 	private int inputFrameRate;
 	private Timer timer;
@@ -36,9 +36,9 @@ public class ImageDisplay {
 	int[][] originalPixelMatrix = new int[height][width];
 
 	class TripleBuffering implements Callable<BufferedImage>{
-		long angle;
+		double angle;
 		double scale;
-		public TripleBuffering(long angle, double scale){
+		public TripleBuffering(double angle, double scale){
 			this.scale = scale;
 			this.angle = angle;
 		}
@@ -76,7 +76,7 @@ public class ImageDisplay {
 		}
 	}
 
-	private BufferedImage animate(long angle, double scale) throws Exception {
+	private BufferedImage animate(double angle, double scale) throws Exception {
 		BufferedImage imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		for(int y = 0; y < height; y++)
 		{
@@ -105,7 +105,7 @@ public class ImageDisplay {
 		}
 		String image = args[0];
 		inputScale = Double.parseDouble(args[1]);
-		inputAngle = Integer.parseInt(args[2]);
+		inputAngle = Double.parseDouble(args[2]);
 		inputFrameRate = Integer.parseInt(args[3]);
 		readImageRGB(width, height, image);
 		frame = new JFrame();
@@ -136,8 +136,13 @@ public class ImageDisplay {
 	}
 
 	private void increment(){
-		INITIAL_ANGLE += inputAngle;
-		INITIAL_SCALE *= inputScale;
+		INITIAL_ANGLE += inputAngle/inputFrameRate;
+		if(INITIAL_SCALE + (inputScale-1)/inputFrameRate >= 0) {
+			INITIAL_SCALE += (inputScale - 1) / inputFrameRate;
+		}
+		else{
+			INITIAL_SCALE = 0;
+		}
 	}
 
 	/**

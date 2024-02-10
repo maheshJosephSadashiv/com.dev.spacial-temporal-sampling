@@ -1,7 +1,7 @@
 package util;
 
 public class MatrixUtil {
-    public static double[][] rotationAndScale(long angle, double x, double y, double size) throws Exception {
+    public static double[][] rotationAndScale(double angle, double x, double y, double size) throws Exception {
         double angleInRadians = Math.toRadians(-angle);
         double cos = roundAvoid(Math.cos(angleInRadians), 5);
         double sin = roundAvoid(Math.sin(angleInRadians), 5);
