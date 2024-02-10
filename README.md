@@ -24,7 +24,7 @@ This Java program provides a simple image display application utilizing triple b
 Example:
 ```
 javac ImageDisplay.java
-java ImageDisplay input_image.jpg 1.5 45 30
+java ImageDisplay Lena_512_512.rgb 1.5 45 30
 ```
 ## Dependencies
 
