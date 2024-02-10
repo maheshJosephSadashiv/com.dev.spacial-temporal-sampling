@@ -9,8 +9,8 @@ public class AntiAliasing {
         int count = 0;
         int xOg = (int) (coordinates.getxCoordinate());
         int yOg = (int) (coordinates.getyCoordinate());
-        for(int i = -1 ; i < 2; i++){
-            for(int j = -1; j < 2 ; j++){
+        for(int i = -2 ; i < 3; i++){
+            for(int j = -2; j < 3 ; j++){
                 int x =  xOg + i;
                 int y =  yOg + j;
                 if (x >= 0 && x < pixelMatrix.length && y >=0 && y < pixelMatrix.length){
