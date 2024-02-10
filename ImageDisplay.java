@@ -147,7 +147,7 @@ public class ImageDisplay {
 
 	/**
 	 * @implNote The run method contains the game loop logic, to achieve the desired max frame rate of 30 FPS
-	 * I have created 3 threads to precalculate the transformations.
+	 * I have created 3 threads to precalculate the transformations in advance.
 	 */
 	public void run() throws Exception {
 		BufferedImage imgOne = null;
