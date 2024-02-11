@@ -88,7 +88,11 @@ public class ImageDisplay {
 						|| translated[0] < 0 || translated[1] < 0)){
 					int pix = 0;
 					if(INITIAL_SCALE < 1) pix = AntiAliasing.averagingFilter(translated, originalPixelMatrix);
-					else pix = originalPixelMatrix[ (int)Math.round(translated[0])][(int)Math.round(translated[1])];
+					else{
+						int _x = (int)Math.round(translated[0]) < 512 ? (int)Math.round(translated[0]): 511;
+						int _y = (int)Math.round(translated[1]) < 512 ? (int)Math.round(translated[1]): 511;
+						pix = originalPixelMatrix[_x][_y];
+					}
 					imgOne.setRGB(x, y, pix);
 				} else{
 					imgOne.setRGB(x, y, Integer.MAX_VALUE);
