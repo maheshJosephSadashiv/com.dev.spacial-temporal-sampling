@@ -1,11 +1,11 @@
 package util;
 
 public class MatrixUtil {
-    public static double[][] rotationAndScale(double angle, double x, double y, double size) throws Exception {
+    public static double[] rotationAndScale(double angle, double x, double y, double size) throws Exception {
         double angleInRadians = Math.toRadians(-angle);
         double cos = roundAvoid(Math.cos(angleInRadians), 5);
         double sin = roundAvoid(Math.sin(angleInRadians), 5);
-        return  new double[][]{{(x*cos - y*sin)/size},{(x*sin + y*cos)/size}};
+        return  new double[] {(x*cos - y*sin)/size, (x*sin + y*cos)/size};
     }
 
     public static double[][] multiply(double[][] firstMatrix, double[][] secondMatrix) throws Exception {

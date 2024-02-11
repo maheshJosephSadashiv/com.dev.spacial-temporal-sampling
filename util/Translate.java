@@ -2,15 +2,15 @@ package util;
 
 public class Translate {
 
-    public static Coordinates coordinateSys(Coordinates coordinates, int height, int width){
-        double Sx = width/2 - coordinates.getxCoordinate();
-        double Sy = height/2 - coordinates.getyCoordinate();
-        return new Coordinates(Sx, Sy);
+    public static double[] coordinateSys(double[] coordinates, int height, int width){
+        double Sx = width/2 - coordinates[0];
+        double Sy = height/2 - coordinates[1];
+        return new double[]{Sx, Sy};
     }
-    public static Coordinates coordinatePixel(Coordinates coordinates, int height, int width){
-        double Sx = coordinates.getxCoordinate() +  width/2 ;
-        double Sy = height/2 + coordinates.getyCoordinate();
-        return new Coordinates(Sx, Sy);
+    public static double[] coordinatePixel(double[] coordinates, int height, int width){
+        double Sx = coordinates[0] +  width/2 ;
+        double Sy = height/2 + coordinates[1];
+        return new double[]{Sx, Sy};
     }
 
 }

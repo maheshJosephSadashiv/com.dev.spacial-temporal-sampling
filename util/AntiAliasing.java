@@ -2,13 +2,13 @@ package util;
 
 public class AntiAliasing {
 
-    public static int averagingFilter(Coordinates coordinates, int[][] pixelMatrix){
+    public static int averagingFilter(double[] coordinates, int[][] pixelMatrix){
         int sumR = 0;
         int sumG = 0;
         int sumB = 0;
         int count = 0;
-        int xOg = (int) (coordinates.getxCoordinate());
-        int yOg = (int) (coordinates.getyCoordinate());
+        int xOg = (int) Math.round(coordinates[0]);
+        int yOg = (int) Math.round(coordinates[1]);
         for(int i = -2 ; i < 3; i++){
             for(int j = -2; j < 3 ; j++){
                 int x =  xOg + i;

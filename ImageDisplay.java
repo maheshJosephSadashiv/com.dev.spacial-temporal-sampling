@@ -1,5 +1,4 @@
 import util.AntiAliasing;
-import util.Coordinates;
 import util.Translate;
 
 import javax.swing.*;
@@ -82,14 +81,14 @@ public class ImageDisplay {
 		{
 			for(int x = 0; x < width; x++)
 			{
-				Coordinates translated = Translate.coordinateSys(new Coordinates(x, y), height, width);
-				double[][] rotated = util.MatrixUtil.rotationAndScale(angle + 180, translated.getxCoordinate(), translated.getyCoordinate(), scale);
-				translated = Translate.coordinatePixel(new Coordinates(rotated[0][0], rotated[1][0]), height, width);
-				if (!(translated.getxCoordinate() >= height || translated.getyCoordinate() >= width
-						|| translated.getxCoordinate() < 0 || translated.getyCoordinate() < 0)){
+				double[] translated = Translate.coordinateSys(new double[]{x, y}, height, width);
+				double[] rotated = util.MatrixUtil.rotationAndScale(angle + 180, translated[0], translated[1], scale);
+				translated = Translate.coordinatePixel(new double[]{rotated[0], rotated[1]}, height, width);
+				if (!(translated[0] >= height || translated[1] >= width
+						|| translated[0] < 0 || translated[1] < 0)){
 					int pix = 0;
 					if(INITIAL_SCALE < 1) pix = AntiAliasing.averagingFilter(translated, originalPixelMatrix);
-					else pix = originalPixelMatrix[(int) translated.getxCoordinate()][(int) translated.getyCoordinate()];
+					else pix = originalPixelMatrix[ (int)Math.round(translated[0])][(int)Math.round(translated[1])];
 					imgOne.setRGB(x, y, pix);
 				} else{
 					imgOne.setRGB(x, y, Integer.MAX_VALUE);
